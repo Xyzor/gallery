@@ -1,6 +1,18 @@
 # gallery: API
 
-The backend for the gallery frontend in [`../www`](../www).
+The backend of the [gallery](../README.md), using only the Node.js standard library. It indexes the photos and videos in a `gallery/` folder with exiftool, makes previews with ImageMagick and ffmpeg, and serves both to the frontend in [`../www`](../www). nginx delivers the actual file bytes via `X-Accel-Redirect`. It also accepts uploads, many at once, and rebuilds previews and the index after them.
+
+**Contents:**
+- [Files](#files)
+- [API reference](#api-reference)
+- [Deploying and updating the gallery](#deploying-and-updating-the-gallery)
+- [Uploading](#uploading)
+- [Local testing](#local-testing)
+- [Server setup](#server-setup)
+  - [Development machine](#development-machine)
+  - [Production server (Debian)](#production-server-debian)
+
+## Files
 
 | File | Purpose |
 |---|---|
@@ -12,6 +24,17 @@ The backend for the gallery frontend in [`../www`](../www).
 | `media-types.js` | The list of supported extensions and the filename rule, shared by the index builder, the server and uploads |
 | `deploy.sh` | Deploys this checkout to the server folder (see below) |
 | `dev/` | Test tools only: dummy-gallery generator, nginx test config, API test script |
+
+## API reference
+
+The API listens on a unix socket. nginx exposes it under `/api/` and strips that prefix, so `GET /api/get-files` reaches the API as `GET /get-files`. Errors are JSON `{"error": "<code>"}`.
+
+| Request | Answer |
+|---|---|
+| `GET /health` | `200 {"status":"ok"}` |
+| `GET /get-files` | `200` with the whole index: `{ files, length, groups, mimes }`. `files` is sorted newest first by `date`, with undated files last. Each file has `SourceFile` and `previewImageUrl` (URLs, or `null` for a missing preview), `FileName`, `Directory`, `MIMEType`, `kind` (`image` or `video`), `FileSize`, `date`, `width`, `height`, `duration`, `orientation`, the raw EXIF dates and an `id`. `groups` lists the folders, e.g. `gallery/2023/holiday`. |
+| `GET /gallery/<path>` | `200` with an empty body and `X-Accel-Redirect: /_gallery/<path>`; nginx then sends the file. `400` for a name that's never valid (a dot-file, `..`, control characters, an encoded `/`); `404` for unsupported types, missing files, symlinks, and symlinked folders that lead outside `gallery/`. |
+| `POST /upload` | Stores one file; see [Uploading](#uploading). |
 
 ## Deploying and updating the gallery
 
@@ -99,7 +122,9 @@ kill $(cat "$XDG_RUNTIME_DIR"/fgallery-test/*.pid)        # stop
 
 `server.js` reads its socket path from `SOCKET_PATH` (default `/run/fgallery-api/api.sock`). Unix socket paths are limited to 107 bytes, so keep the run directory short.
 
-## Installed or configured outside this project
+## Server setup
+
+What's installed or configured outside this repository.
 
 ### Development machine
 

@@ -1,6 +1,16 @@
 # gallery: web frontend
 
-A mobile-first media gallery written in plain HTML, CSS and JavaScript, with no build step. It loads the file list once from `/api/get-files`, which is served by the [API in `../api`](../api). Filtering and paging then happen in the browser.
+The frontend of the [gallery](../README.md): a mobile-first photo and video gallery written in plain HTML, CSS and JavaScript (ES modules), with no framework and no build step. It loads the file list once from `/api/get-files`, which is served by the [API in `../api`](../api). Filtering, paging and the viewer then run in the browser, and uploads go to `/api/upload`.
+
+**Contents:**
+- [Files](#files)
+- [Code tour](#code-tour)
+- [1. Against the mock server](#1-against-the-mock-server)
+- [2. Against the real backend (nginx + server.js)](#2-against-the-real-backend-nginx--serverjs)
+- [Manual test checklist](#manual-test-checklist)
+- [Deploy](#deploy)
+
+## Files
 
 | Path | Purpose |
 |---|---|
@@ -8,6 +18,24 @@ A mobile-first media gallery written in plain HTML, CSS and JavaScript, with no 
 | `dev/mock-server.mjs` | Test-only mock backend that serves the page plus fake data |
 | `dev/sample.webm` | The clip the mock server returns for every video |
 | `deploy.sh` | Deploys this checkout to the web root (see [Deploy](#deploy)) |
+
+## Code tour
+
+All modules are in `js/`; `index.html` loads `main.js` as an ES module.
+
+| Module | Role |
+|---|---|
+| `main.js` | Loads the index and wires the grid, viewer and overlays together; keeps the filtered list (`filter_files[]`) the grid and viewer share |
+| `api.js` | `fetchGallery()`, and `uploadFile()` via `XMLHttpRequest`, the only browser API that reports upload progress |
+| `grid.js` | The square-tile grid: renders 60 tiles per page as an `IntersectionObserver` sentinel nears the viewport, and reuses tiles across filter changes |
+| `viewer.js` | Full-screen viewer: paging, preloading the neighbouring pictures, video, the details button |
+| `zoom-pan.js` | Pinch, double-tap, wheel and button zoom with panning and swipe, built on pointer events |
+| `filter.js` | The filter criteria and the matching (folder, type, date range, undated) |
+| `filter-dialog.js` | The filter sheet, including the folder search that only hides, never deselects |
+| `info-dialog.js` | The details sheet with a file's metadata |
+| `upload-dialog.js` | The upload sheet: folder field with suggestions and path validation, per-file checks, 4 uploads at a time with progress |
+| `media-cache.js` | Keeps every loaded `<img>`/`<video>` element so a file is downloaded at most once; `blob:` URLs aren't allowed by the CSP |
+| `format.js` | Dates, sizes, durations and folder labels |
 
 There are two ways to run it locally: against the **mock server** (fast, no setup) or against the **real backend** (the full stack, including nginx).
 
@@ -60,7 +88,7 @@ kill $(cat "$XDG_RUNTIME_DIR"/fgallery-test/*.pid)    # stop
 
 The dummy gallery has 22 files: photos, PNG, WebP and GIF images, MP4/MOV/WebM/M4V videos, a rotated photo, a filename with accents, a nested folder and a top-level file. 8 of the files have no date.
 
-## What to check
+## Manual test checklist
 
 Use a phone-sized window (browser dev tools, about 390 px wide), and keep the console and network tabs open.
 
