@@ -1,0 +1,701 @@
+/* ==========================================================================
+   Tokens (mobile-first; larger screens only add columns and centre dialogs)
+   ========================================================================== */
+:root {
+  color-scheme: dark light;
+  --bg: #101215;
+  --surface: #1b1e23;
+  --surface-raised: #252930;
+  --border: #30353d;
+  --text: #eceef1;
+  --text-muted: #9aa1ab;
+  --accent: #7aaefc;
+  --accent-text: #0b1320;
+  --danger: #ff8a80;
+  --overlay: rgb(0 0 0 / 0.55);
+
+  --grid-columns: 3;
+  --grid-gap: 2px;
+  --radius: 12px;
+  --tap-size: 44px;
+  --bar-height: 56px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7f9;
+    --surface: #e7e9ed;
+    --surface-raised: #ffffff;
+    --border: #d3d7de;
+    --text: #15181c;
+    --text-muted: #5b636e;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --danger: #c62828;
+  }
+}
+
+@media (min-width: 600px) { :root { --grid-columns: 4; --grid-gap: 4px; } }
+@media (min-width: 900px) { :root { --grid-columns: 6; } }
+@media (min-width: 1300px) { :root { --grid-columns: 8; } }
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+/* No background scrolling while any overlay is open. */
+html:has(dialog[open]) { overflow: hidden; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.4 var(--font);
+}
+
+button, input, select { font: inherit; color: inherit; }
+
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.35; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap-size);
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-raised);
+}
+
+.button--primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--tap-size);
+  height: var(--tap-size);
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.badge {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   App bar
+   ========================================================================== */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: calc(var(--bar-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+.app-bar__title { margin: 0; font-size: 1.125rem; }
+
+.app-bar__count {
+  flex: 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status {
+  margin: 0;
+  padding: 48px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ==========================================================================
+   Grid — fixed square cells, so the layout depends only on the file order
+   ========================================================================== */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));
+  gap: var(--grid-gap);
+  margin: 0;
+  padding: var(--grid-gap) var(--grid-gap) env(safe-area-inset-bottom);
+  list-style: none;
+}
+
+.grid-sentinel { height: 1px; }
+
+.grid__item { position: relative; }
+
+.tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.tile__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tile__image.is-loaded { opacity: 1; }
+
+.tile__placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.tile__badge {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tile__badge-icon { font-size: 0.5625rem; }
+
+@media (min-width: 600px) {
+  .tile__badge { right: 6px; bottom: 6px; height: 22px; font-size: 0.75rem; }
+}
+
+/* The "i" that opens the details overlay, on tiles and in the viewer. */
+.info-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  font: italic 700 0.9375rem/1 Georgia, "Times New Roman", serif;
+}
+
+.tile__info {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgb(0 0 0 / 0.35);
+  /* Only shown while the tile is hovered or has keyboard focus. Hidden, it ignores
+     clicks, so clicking a tile's corner still opens the viewer. */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.grid__item:hover .tile__info,
+.grid__item:focus-within .tile__info {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Touch screens have no hover: always show it there. */
+@media (hover: none) {
+  .tile__info {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 600px) {
+  .tile__info { top: 6px; right: 6px; }
+}
+
+@media (hover: hover) {
+  .tile:hover .tile__image.is-loaded { opacity: 0.85; }
+}
+
+/* ==========================================================================
+   Filter overlay — bottom sheet on phones, centred panel on larger screens
+   ========================================================================== */
+.sheet {
+  width: 100%;
+  max-width: 100%;
+  max-height: 90dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.sheet::backdrop { background: var(--overlay); }
+
+@media (min-width: 600px) {
+  .sheet {
+    width: min(480px, 100% - 32px);
+    margin: auto;
+    border-radius: var(--radius);
+  }
+}
+
+.filter,
+.info,
+.upload {
+  display: flex;
+  flex-direction: column;
+  max-height: 90dvh;
+}
+
+.sheet__header,
+.sheet__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+}
+
+.sheet__header { border-bottom: 1px solid var(--border); }
+
+.sheet__footer {
+  justify-content: flex-end;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+
+.sheet__title { flex: 1; margin: 0; font-size: 1.125rem; }
+
+.sheet__body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px 16px;
+}
+
+.info .sheet__body { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+
+.info__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.info__table th,
+.info__table td {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.info__table tr:last-child th,
+.info__table tr:last-child td { border-bottom: 0; }
+
+.info__table th {
+  padding-right: 16px;
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.info__table td {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter__section {
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter__legend {
+  padding: 0;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.filter__options {
+  display: grid;
+  max-height: 40dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.filter__search { margin-bottom: 8px; }
+
+.filter__no-match,
+.filter__selected-count {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--tap-size);
+  cursor: pointer;
+}
+
+.option__input { width: 20px; height: 20px; flex: none; accent-color: var(--accent); }
+
+.option__text { overflow-wrap: anywhere; }
+
+.filter__dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.filter__undated { margin-top: 8px; }
+
+.field { display: grid; gap: 4px; }
+
+.field__label { color: var(--text-muted); font-size: 0.875rem; }
+
+.field__input {
+  width: 100%;
+  min-height: var(--tap-size);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.filter__hint {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ==========================================================================
+   Upload overlay — same sheet as the filter
+   ========================================================================== */
+.upload__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 8px 0 12px;
+}
+
+/* The file input covers its label invisibly, so a click or Enter/Space opens the picker. */
+.upload__add {
+  position: relative;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.upload__add:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.upload__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* "New folder…" or why the typed path is refused; empty most of the time. */
+.upload__group-note {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.upload__group-note:empty { display: none; }
+.upload__group-note.is-error { color: var(--danger); }
+
+.upload__note {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.upload__empty {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.upload__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.upload__table th,
+.upload__table td {
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.upload__table thead th {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.upload__table tbody tr:last-child td { border-bottom: 0; }
+
+.upload__name { overflow-wrap: anywhere; }
+
+.upload__size {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.upload__status { font-variant-numeric: tabular-nums; }
+.upload__status.is-error { color: var(--danger); }
+.upload__status.is-done { color: var(--accent); }
+
+.upload__table th:last-child,
+.upload__action {
+  width: var(--tap-size);
+  padding-right: 0;
+}
+
+.upload__remove { font-size: 1.25rem; }
+
+.upload__footer { flex-wrap: wrap; }
+
+/* A hint gets its own line above the buttons; an empty one takes no room (and stays in the
+   page for aria-live). */
+.upload__hint {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.upload__hint:empty { flex-basis: 0; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Viewer overlay
+   ========================================================================== */
+.viewer {
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #000;
+  color: #fff;
+}
+
+/* No position override: a modal dialog is already position: fixed, which keeps it on screen
+   and positions the absolute bar, nav and zoom controls. */
+.viewer[open] {
+  display: grid;
+  grid-template-rows: auto;
+}
+
+.viewer::backdrop { background: #000; }
+
+.viewer__bar {
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  padding: max(env(safe-area-inset-top), 4px) 4px 0 16px;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.viewer__info {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.viewer__meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer__meta { color: #b6bcc5; font-size: 0.8125rem; }
+
+/* Lighter than on the tiles: the viewer's background is black. */
+.viewer__info-button {
+  justify-self: start;
+  margin-top: 6px;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  background: rgb(255 255 255 / 0.2);
+}
+
+.viewer__stage {
+  position: relative;
+  overflow: hidden;
+  touch-action: none; /* All touch gestures are handled by ZoomPan. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.viewer__media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* No will-change: transform here. It puts the image on its own GPU layer, which is
+   cut into tiles; drawn at fractional zoom/pan offsets, the tile edges blend with the
+   black background and show as dark grid lines across the photo. */
+.viewer__media--image {
+  transform-origin: center;
+  cursor: zoom-in;
+}
+
+.viewer__stage.is-zoomed .viewer__media--image { cursor: grab; }
+.viewer__stage.is-zoomed .viewer__media--image:active { cursor: grabbing; }
+
+.viewer__stage.is-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border: 3px solid rgb(255 255 255 / 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.viewer__error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--danger);
+}
+
+.viewer__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: var(--tap-size);
+  height: 64px;
+  margin-top: -32px;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.viewer__nav--prev { left: max(4px, env(safe-area-inset-left)); }
+.viewer__nav--next { right: max(4px, env(safe-area-inset-right)); }
+.viewer__nav:disabled { visibility: hidden; }
+
+.viewer__zoom {
+  position: absolute;
+  left: 50%;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.6);
+  transform: translateX(-50%);
+}
+
+.viewer__fit { font-size: 0.875rem; font-weight: 600; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile__image,
+  .tile__info { transition: none; }
+  .viewer__stage.is-loading::after { animation-duration: 2.4s; }
+}

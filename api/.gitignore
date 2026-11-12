@@ -1,0 +1,5 @@
+gallery/
+data/
+# where the index lived before it moved to data/
+gallery-index.json
+dev/.outside/

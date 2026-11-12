@@ -1,0 +1,59 @@
+# Test-only nginx config, rendered by dev/start-test-env.sh (placeholders @...@).
+# Mirrors the production layout: the frontend at /, the API at /api/ over the
+# unix socket, and an internal /_gallery/ location for X-Accel-Redirect.
+# Runs as the current user; nothing outside @RUN@ is written.
+
+daemon off;
+worker_processes 1;
+pid @RUN@/nginx.pid;
+error_log @RUN@/error.log info;
+
+events { worker_connections 64; }
+
+http {
+    include       @MIME@;
+    default_type  application/octet-stream;
+    access_log    @RUN@/access.log;
+    client_body_temp_path @RUN@/client_body;
+    proxy_temp_path       @RUN@/proxy;
+    fastcgi_temp_path     @RUN@/fastcgi;
+    uwsgi_temp_path       @RUN@/uwsgi;
+    scgi_temp_path        @RUN@/scgi;
+    sendfile on;
+
+    upstream fgallery_api {
+        server unix:@SOCK@;
+        keepalive 8;
+    }
+
+    server {
+        listen 127.0.0.1:8088;
+        server_name localhost;
+
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+
+        root @WWW@;
+        index index.html;
+        location ~ ^/(dev|tests|node_modules)/ { return 404; }
+
+        location /api/ {
+            proxy_pass http://fgallery_api/;      # strips the /api prefix
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+        }
+
+        # Uploads: the default 1 MB body limit would reject most media.
+        location = /api/upload {
+            proxy_pass http://fgallery_api/upload;
+            proxy_http_version 1.1;
+            proxy_set_header Connection "";
+            client_max_body_size 2g;
+        }
+
+        location /_gallery/ {
+            internal;
+            alias @REPO@/gallery/;
+            disable_symlinks on;
+        }
+    }
+}

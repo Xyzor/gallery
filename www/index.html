@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gallery</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/gallery.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <header class="app-bar">
+    <h1 class="app-bar__title">Gallery</h1>
+    <p class="app-bar__count" id="result-count" aria-live="polite"></p>
+    <button type="button" class="button" id="open-upload" aria-haspopup="dialog" disabled>Upload</button>
+    <button type="button" class="button" id="open-filter" aria-haspopup="dialog" disabled>
+      Filter <span class="badge" id="filter-badge" hidden></span>
+    </button>
+  </header>
+
+  <main>
+    <p class="status" id="status" role="status">Loading…</p>
+    <ul class="grid" id="grid" aria-label="Files"></ul>
+    <div class="grid-sentinel" id="grid-sentinel" aria-hidden="true"></div>
+  </main>
+
+  <!-- Filter overlay -->
+  <dialog class="sheet" id="filter-dialog" aria-labelledby="filter-title">
+    <form class="filter" id="filter-form" novalidate>
+      <header class="sheet__header">
+        <h2 class="sheet__title" id="filter-title">Filter</h2>
+        <button type="button" class="icon-button" data-action="close" aria-label="Close filter">&times;</button>
+      </header>
+
+      <div class="sheet__body">
+        <fieldset class="filter__section">
+          <legend class="filter__legend">Folders</legend>
+          <!-- Only narrows the list below; not part of the filter and never unchecks a folder. -->
+          <input class="field__input filter__search" type="search" id="filter-group-search"
+                 placeholder="Search folders" aria-label="Search folders"
+                 autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="filter__options" id="filter-groups"></div>
+          <p class="filter__no-match" hidden>No folders match.</p>
+          <p class="filter__selected-count" aria-live="polite"></p>
+        </fieldset>
+
+        <fieldset class="filter__section">
+          <legend class="filter__legend">Types</legend>
+          <div class="filter__options" id="filter-kinds"></div>
+        </fieldset>
+
+        <fieldset class="filter__section">
+          <legend class="filter__legend">Date</legend>
+          <div class="filter__dates">
+            <label class="field">
+              <span class="field__label">From</span>
+              <input class="field__input" type="date" name="from" id="filter-from">
+            </label>
+            <label class="field">
+              <span class="field__label">To</span>
+              <input class="field__input" type="date" name="to" id="filter-to">
+            </label>
+          </div>
+          <label class="option filter__undated">
+            <input class="option__input" type="checkbox" name="undated" id="filter-undated">
+            <span class="option__text">Without a date</span>
+          </label>
+        </fieldset>
+
+        <p class="filter__hint">Leave a section empty to include everything.</p>
+      </div>
+
+      <footer class="sheet__footer">
+        <button type="reset" class="button">Clear</button>
+        <button type="submit" class="button button--primary">Apply</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- File viewer overlay -->
+  <dialog class="viewer" id="viewer" aria-label="File viewer">
+    <header class="viewer__bar">
+      <div class="viewer__info">
+        <span class="viewer__meta" id="viewer-meta"></span>
+        <button type="button" class="info-button viewer__info-button" data-action="info" aria-label="Show details">i</button>
+      </div>
+      <button type="button" class="icon-button" data-action="close" aria-label="Close viewer">&times;</button>
+    </header>
+
+    <div class="viewer__stage" id="viewer-stage"></div>
+
+    <button type="button" class="viewer__nav viewer__nav--prev" data-action="prev" aria-label="Previous file">&#8249;</button>
+    <button type="button" class="viewer__nav viewer__nav--next" data-action="next" aria-label="Next file">&#8250;</button>
+
+    <div class="viewer__zoom" id="viewer-zoom">
+      <button type="button" class="icon-button" data-action="zoom-out" aria-label="Zoom out">&minus;</button>
+      <button type="button" class="icon-button viewer__fit" data-action="zoom-reset" aria-label="Fit to screen">Fit</button>
+      <button type="button" class="icon-button" data-action="zoom-in" aria-label="Zoom in">+</button>
+    </div>
+  </dialog>
+
+  <!-- Details overlay: one file's metadata -->
+  <dialog class="sheet" id="info-dialog" aria-labelledby="info-title">
+    <div class="info">
+      <header class="sheet__header">
+        <h2 class="sheet__title" id="info-title">Details</h2>
+        <button type="button" class="icon-button" data-action="close" aria-label="Close details">&times;</button>
+      </header>
+      <div class="sheet__body">
+        <table class="info__table">
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Upload overlay: files into one existing folder -->
+  <dialog class="sheet" id="upload-dialog" aria-labelledby="upload-title">
+    <div class="upload">
+      <header class="sheet__header">
+        <h2 class="sheet__title" id="upload-title">Upload</h2>
+        <button type="button" class="icon-button" data-action="close" aria-label="Close upload">&times;</button>
+      </header>
+
+      <div class="sheet__body">
+        <div class="upload__controls">
+          <label class="field">
+            <span class="field__label">Folder</span>
+            <!-- Pick an existing folder from the suggestions, type a new path, or edit one. -->
+            <input class="field__input" type="text" id="upload-group" list="upload-groups"
+                   placeholder="e.g. 2019/holiday or a new folder"
+                   autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done">
+            <datalist id="upload-groups"></datalist>
+          </label>
+          <label class="button upload__add">
+            Add files
+            <input class="upload__input" type="file" id="upload-input" multiple>
+          </label>
+          <p class="upload__group-note" aria-live="polite"></p>
+        </div>
+
+        <p class="upload__empty">No files selected.</p>
+        <table class="upload__table" hidden>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Size</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="visually-hidden">Remove</span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <p class="upload__note">After an upload, the gallery needs roughly 2 minutes to index the new files. Reload the page after that to see them.</p>
+      </div>
+
+      <footer class="sheet__footer upload__footer">
+        <p class="upload__hint" aria-live="polite"></p>
+        <button type="button" class="button" data-action="clear">Clear</button>
+        <button type="button" class="button button--primary" data-action="upload" disabled>Upload</button>
+      </footer>
+    </div>
+  </dialog>
+</body>
+</html>
